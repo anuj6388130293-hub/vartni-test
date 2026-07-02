@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect CBT Exam System - Study of India</title>
+    <style>
+        :root {
+            --primary-color: #ff5722;
+            --secondary-color: #2196f3;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --review-color: #2980b9;
+            --unvisited-color: #f1f2f6;
+            --dark-color: #2c3e50;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #f5f6fa; color: var(--dark-color); padding: 15px; }
+
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .channel-header { text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #ddd; padding-bottom: 10px; }
+        .channel-name { font-size: 2.2rem; font-weight: bold; background: linear-gradient(45deg, #ff9933, #333, #138808); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* CBT Layout */
+        .cbt-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-top: 15px; }
+        @media (max-width: 850px) { .cbt-layout { grid-template-columns: 1fr; } }
+
+        /* Top Action Bar with Instruction Colors */
+        .top-action-bar { display: flex; gap: 10px; margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0; }
+        
+        /* Main Question Box */
+        .main-exam-area { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; min-height: 380px; }
+        .question-header { font-size: 1.1rem; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .question-text { font-size: 1.3rem; font-weight: 600; margin-bottom: 20px; line-height: 1.5; }
+        
+        .options-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .option-card { display: flex; align-items: center; padding: 14px; background: #f9f9f9; border: 1px solid #dcdde1; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .option-card:hover { background: #f1f2f6; }
+        .option-card input { margin-right: 12px; transform: scale(1.3); cursor: pointer; }
+
+        /* Bottom Nav */
+        .bottom-nav-bar { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px; margin-top: 10px; }
+
+        /* Side Palette */
+        .side-palette { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
+        .palette-title { font-weight: bold; margin-bottom: 10px; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .grid-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-y: auto; max-height: 250px; padding: 5px; }
+        
+        .p-btn { width: 100%; aspect-ratio: 1; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; background: #ffffff; color: #333; }
+        .p-btn.answered { background: var(--success-color) !important; color: white !important; border-color: var(--success-color); }
+        .p-btn.reviewed { background: var(--review-color) !important; color: white !important; border-color: var(--review-color); }
+        .p-btn.unanswered { background: #ffeaa7; color: #333; }
+        .p-btn.active-q { border: 2.5px solid #000 !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+
+        .legend { margin-top: 15px; display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.85rem; border-top: 1px solid #ddd; padding-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .box { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #ccc; }
+
+        /* General Buttons */
+        .btn { padding: 10px 16px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; font-size: 0.95rem; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-review { background: var(--review-color); color: white; }
+        .btn-clear { background: #ffffff; color: #333; border: 1px solid #ccc; }
+        .btn-dark { background: #34495e; color: white; }
+        .btn-danger { background: var(--danger-color); color: white; }
+
+        .exam-info-header { display: flex; justify-content: space-between; align-items: center; background: #34495e; color: white; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; }
+        .timer-box { font-size: 1.2rem; font-weight: bold; background: #e74c3c; padding: 4px 12px; border-radius: 4px; }
+
+        /* Result Cards Grid */
+        .score-summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        @media (max-width: 600px) { .score-summary-grid { grid-template-columns: repeat(4, 1fr); } }
+        .score-btn { padding: 10px; font-weight: bold; border: none; border-radius: 4px; text-align: center; color: white; font-size: 1.1rem; cursor: pointer; }
+        .score-btn.right { background: var(--success-color); }
+        .score-btn.wrong { background: var(--danger-color); }
+        .score-btn.skipped { background: #7f8c8d; }
+
+        /* Solutions styles */
+        .sol-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; scroll-margin-top: 20px; }
+        .sol-opt { padding: 10px; margin: 5px 0; border: 1px solid #eee; border-radius: 4px; background: #f9f9f9; }
+        .sol-opt.correct { background-color: #d4edda !important; border-color: #c3e6cb !important; font-weight: bold; color: #155724; }
+        .sol-opt.wrong { background-color: #f8d7da !important; border-color: #f5c6cb !important; color: #721c24; }
+        .explanation-box { background: #fff8db; border-left: 4px solid #f1c40f; padding: 12px; margin-top: 10px; border-radius: 3px; font-size: 0.95rem; line-height: 1.5; }
+        .time-badge { display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="channel-header">
+        <div class="channel-name">STUDY OF INDIA</div>
+        <p style="color: #7f8c8d; font-size: 0.9rem; font-weight: bold;">वर्तनी शुद्धि (Spelling Check) - LIVE CBT PRACTICE PANEL</p>
+    </div>
+
+    <div id="start-screen" class="screen active">
+        <h2 style="text-align: center; margin-bottom: 15px; color: #2c3e50;">हिन्दी वर्तनी शुद्धि: स्पेशल 20 मॉक टेस्ट</h2>
+        <div style="background: #edf2f7; padding: 20px; border-radius: 6px; border-left: 5px solid var(--secondary-color); margin-bottom: 20px;">
+            <h4 style="margin-bottom: 8px;">🎯 टेस्ट की मुख्य विशेषताएं:</h4>
+            <ul style="margin-left: 20px; line-height: 1.8;">
+                <li>कुल प्रश्न: <strong>20 अति महत्वपूर्ण प्रश्न</strong></li>
+                <li>कुल निर्धारित समय: <strong>24 मिनट</strong></li>
+                <li><strong>Auto-Save System:</strong> आपके विकल्प पर क्लिक करते ही उत्तर सुरक्षित होकर संख्या हरी हो जाएगी।</li>
+                <li>प्रश्न दोनों प्रकार के हैं—कुछ में शुद्ध रूप खोजना है, तो कुछ में 3 शुद्ध देकर 1 अशुद्ध शब्द पूछा गया है।</li>
+            </ul>
+        </div>
+        <button class="btn btn-success" style="width: 100%; padding: 15px; font-size: 1.2rem;" onclick="initExam()">परीक्षा प्रारंभ करें (Start Exam)</button>
+    </div>
+
+    <div id="exam-screen" class="screen">
+        <div class="exam-info-header">
+            <div><strong>विषय:</strong> सामान्य हिन्दी (शुद्ध-अशुद्ध शब्द)</div>
+            <div class="timer-box" id="clock">24:00</div>
+        </div>
+
+        <div class="cbt-layout">
+            <div>
+                <div class="top-action-bar">
+                    <button class="btn btn-success" onclick="actionSaveNext()">Save & Next (Green)</button>
+                    <button class="btn btn-review" onclick="actionMarkReview()">Mark for Review (Blue)</button>
+                    <button class="btn btn-clear" onclick="actionClearResponse()">Clear Response (White)</button>
+                </div>
+
+                <div class="main-exam-area">
+                    <div>
+                        <div class="question-header">
+                            <span id="q-number-title">Question 1 of 20</span>
+                            <span style="color: var(--primary-color); font-weight: bold;" id="q-type-badge">प्रकार: शुद्ध खोजें</span>
+                        </div>
+                        <div class="question-text" id="q-text-box">लोड हो रहा है...</div>
+                        <div class="options-container" id="options-box">
+                            </div>
+                    </div>
+
+                    <div class="bottom-nav-bar">
+                        <button class="btn btn-dark" id="prev-btn" onclick="navPrevious()">← Previous</button>
+                        <button class="btn btn-danger" onclick="confirmSubmit()">Final Submit Test</button>
+                        <button class="btn btn-dark" id="next-btn" onclick="navNext()">Next →</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-palette">
+                <div class="palette-title">Question Palette</div>
+                <div class="grid-buttons" id="palette-grid">
+                    </div>
+                
+                <div class="legend">
+                    <div class="legend-item"><div class="box" style="background: var(--success-color);"></div> Green: उत्तर दे दिया (Saved)</div>
+                    <div class="legend-item"><div class="box" style="background: var(--review-color);"></div> Blue: समीक्षा के लिए चिन्हित (Reviewed)</div>
+                    <div class="legend-item"><div class="box" style="background: #ffffff;"></div> White: अभी उत्तर नहीं दिया (Unanswered)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h2 style="text-align: center; color: var(--success-color); margin-bottom: 20px;">🏆 आपका परीक्षा परिणाम (Performance Card)</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; text-align: center; border-top: 4px solid var(--success-color);">
+                <div style="font-size: 0.9rem; color: #555;">आपका कुल स्कोर</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #2e7d32;" id="res-score">0/20</div>
+            </div>
+            <div style="background: #eef2f7; padding: 15px; border-radius: 6px; text-align: center; border-top: 4px solid var(--secondary-color);">
+                <div style="font-size: 0.9rem; color: #555;">सटीकता प्रतिशत</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #1565c0;" id="res-accuracy">0%</div>
+            </div>
+            <div style="background: #fdf2e9; padding: 15px; border-radius: 6px; text-align: center; border-top: 4px solid var(--primary-color);">
+                <div style="font-size: 0.9rem; color: #555;">कुल व्यतीत समय</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #d84315;" id="res-total-time">0s</div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 15px;">📊 प्रश्न रिपोर्ट समरी (सटीक जांच ग्रिड):</h3>
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">निचे दिए गए नंबरों पर क्लिक करके आप सीधे उस प्रश्न के विस्तृत समाधान पर जा सकते हैं:</p>
+        <div class="score-summary-grid" id="score-summary-numbers">
+            </div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #34495e; padding-bottom: 5px; color: #2c3e50;">🔍 प्रत्येक प्रश्न का विस्तृत समाधान (With Full Explanation):</h3>
+        <div id="detailed-solutions-box">
+            </div>
+        
+        <button class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 15px;" onclick="window.location.reload()">दोबारा टेस्ट दें (Re-test)</button>
+    </div>
+</div>
+
+<script>
+    // 20 High-Quality Questions with dynamic rules and structured explanations
+    const questions = [
+        { q: "निम्नलिखित में से 'शुद्ध' वर्तनी वाले शब्द का चयन कीजिए:", o: ["कवयित्री", "कविइत्री", "कवयत्री", "कविपत्री"], a: 0, t: "pure", e: "शुद्ध रूप 'कवयित्री' है। ध्यान रखें, कवि का स्त्रीलिंग बनाते समय 'कव' के बाद 'यित्री' जुड़ता है।" },
+        { q: "किस शब्द की वर्तनी 'अशुद्ध' है? (3 शब्द शुद्ध हैं, 1 गलत खोजें):", o: ["उज्ज्वल", "अहल्या", "द्वारका", "आर्शीवाद"], a: 3, t: "find_wrong", e: "अशुद्ध रूप 'आर्शीवाद' है। इसका शुद्ध रूप 'आशीर्वाद' होता है, जिसमें रेफ (र) हमेशा 'व' के ऊपर लगता है। बाकी तीनों विकल्प (उज्ज्वल, अहल्या, द्वारका) पूर्णतः शुद्ध लिखे हैं।" },
+        { q: "सही वर्तनी वाले शब्द का चुनाव कीजिए:", o: ["ज्योत्सना", "ज्योत्स्ना", "जोत्सना", "ज्यात्स्ना"], a: 1, t: "pure", e: "शुद्ध रूप 'ज्योत्स्ना' है। इसमें आधा 'त' (त्) और आधा 'स' (स्) दोनों एक साथ प्रयुक्त होते हैं।" },
+        { q: "निम्नलिखित में से 'अशुद्ध' शब्द का चयन कीजिए:", o: ["संन्यासी", "याज्ञवल्क्य", "तदुपरान्त", "विदुषी"], a: 2, t: "find_wrong", e: "अशुद्ध रूप 'तदुपरान्त' है। इसका शुद्ध रूप 'तदुपरांत' होता है क्योंकि 'तत् + उपरांत' की संधि होने पर उ की मात्रा लगती है, ओ की नहीं। संन्यासी, याज्ञवल्क्य और विदुषी बिल्कुल शुद्ध हैं।" },
+        { q: "शुद्ध वर्तनी का चयन कीजिए:", o: ["हिरण्यकशिपु", "हिरण्यकश्यप", "हिरण्यकशिपू", "हिरण्यकषिपु"], a: 0, t: "pure", e: "शुद्ध रूप 'हिरण्यकशिपु' है। लोग प्रायः अशुद्ध रूप 'हिरण्यकश्यप' बोल देते हैं जो कि गलत है।" },
+        { q: "किस शब्द की वर्तनी व्याकरण के दृष्टिकोण से शुद्ध है?", o: ["अन्त्याक्षरी", "अन्ताक्षरी", "अंत्याछरी", "अन्ताछरी"], a: 0, t: "pure", e: "शुद्ध रूप 'अन्त्याक्षरी' है। यह 'अंत्य + अक्षरी' से मिलकर बना है, जिसका अर्थ आखिरी अक्षर से शुरू होने वाला खेल है।" },
+        { q: "निम्नलिखित में से 'अशुद्ध' वर्तनी वाला शब्द चुनिए:", o: ["पूजनीय", "माहात्म्य", "कृशांगी", "प्रज्वलित"], a: 0, t: "find_wrong", e: "अशुद्ध 'पूजनीय' है। इसका शुद्ध रूप 'पूजनीय' होता है या फिर केवल 'पूज्य' लिखा जाता है। माहात्म्य (म पर आ, आधा त, आधा म), कृशांगी (दुबली स्त्री) तथा प्रज्वलित (एक आधा ज) बिल्कुल शुद्ध हैं।" },
+        { q: "निम्नलिखित में से कौन सी वर्तनी शुद्ध है?", o: ["विरहणी", "विरहिणी", "विरहीणी", "विरहनी"], a: 1, t: "pure", e: "शुद्ध रूप 'विरहिणी' है। इसमें ह पर छोटी इ तथा ण पर बड़ी ई की मात्रा का प्रयोग होता है।" },
+        { q: "निम्नलिखित में से 'अशुद्ध' वर्तनी को चिन्हित कीजिए:", o: ["अनुगृहीत", "उच्छृंखल", "कालिदास", "अतिश्यoक्ति"], a: 3, t: "find_wrong", e: "अशुद्ध रूप 'अतिश्यoक्ति' है। इसका शुद्ध रूप 'अतिशयोक्ति' होता है जिसमें पूरा 'श' आता है, आधा नहीं। अनुगृहीत (ग के नीचे ऋ), उच्छृंखल और कालिदास (ल पर छोटी इ) शुद्ध हैं।" },
+        { q: "शुद्ध शब्द रूप कौन सा है?", o: ["अन्तर्धान", "अन्तर्ध्यान", "अंतधान", "अंतरध्यान"], a: 0, t: "pure", e: "शुद्ध रूप 'अन्तर्धान' है। लोग बोलचाल में 'अंतरध्यान' बोल देते हैं जो सर्वथा अशुद्ध है।" },
+        { q: "इनमें से 'अशुद्ध' शब्द कौन सा है?", o: ["जाज्वल्यमान", "जिजीविषा", "नूपुर", "द्वारिका"], a: 3, t: "find_wrong", e: "अशुद्ध 'द्वारिका' है। इसका शुद्ध रूप 'द्वारका' होता है। जाज्वल्यमान, जिजीविषा (जीने की इच्छा) और नूपुर (न पर बड़ा ऊ, प पर छोटा उ) बिल्कुल शुद्ध रूप हैं।" },
+        { q: "शुद्ध शब्द का चयन करें जिसमें 'इक' प्रत्यय का सही प्रयोग हुआ हो:", o: ["प्रामाणिक", "प्रमाणिक", "प्रमानिक", "प्रामाणीक"], a: 0, t: "pure", e: "शुद्ध रूप 'प्रामाणिक' है। प्रमाण शब्द में जब 'इक' प्रत्यय जुड़ता है, तो पहला अक्षर 'प्र' बदलकर 'प्रा' हो जाता है।" },
+        { q: "निम्नलिखित में से 'अशुद्ध' वर्तनी वाला विकल्प चुनिए:", o: ["सुश्रूषा", "बहिरंग", "व्यावसायिक", "सौजन्यता"], a: 3, t: "find_wrong", e: "अशुद्ध 'सौजन्यता' है। शुद्ध रूप 'सौजन्य' या 'सुजनता' होता है, सौजन्यता लिखना व्याकरणिक भूल है। सुश्रूषा (पहला श छोटा उ, श्र पर बड़ा ऊ) तथा व्यावसायिक बिल्कुल शुद्ध हैं।" },
+        { q: "शुद्ध वर्तनी का चयन कीजिए:", o: ["श्मशान", "शमशान", "श्मसान", "समशान"], a: 0, t: "pure", e: "शुद्ध रूप 'श्मशान' है। इसमें पहला 'श' आधा तालव्य तथा दूसरा पूरा तालव्य श होता है।" },
+        { q: "किस शब्द की वर्तनी अशुद्ध है?", o: ["वाङ्मय", "षण्मास", "हस्तक्षेप", "निष्काषन"], a: 3, t: "find_wrong", e: "अशुद्ध रूप 'निष्काषन' है। इसका शुद्ध रूप 'निष्कासन' होता है (अंत में दन्त्य स)। वाङ्मय, षण्मास और हस्तक्षेप बिल्कुल शुद्ध शब्द हैं।" },
+        { q: "शुद्ध वर्तनी वाला शब्द कौन सा है?", o: ["उपरि लिखित", "ऊपरिलिखित", "उपरोक्त", "उपरलिखीत"], a: 1, t: "pure", e: "शुद्ध रूप 'ऊपरिलिखित' है। संधियों के नियम के अनुसार 'उपरोक्त' शब्द अशुद्ध माना जाता है, 'उपर्युक्त' या 'ऊपरिलिखित' ही शुद्ध है।" },
+        { q: "शुद्ध वर्तनी का चयन कीजिए:", o: ["अधिशासी", "अधिशाषी", "अधिसासी", "अधिशाशी"], a: 0, t: "pure", e: "शुद्ध रूप 'अधिशासी' है। इसमें पहले तालव्य 'श' आता है और अंत में दन्त्य 'स' पर बड़ी ई की मात्रा लगती है।" },
+        { q: "निम्नलिखित में से 'अशुद्ध' रूप कौन सा है?", o: ["द्वंद्व", "सच्चिदानंद", "युधिष्ठिर", "अपराहन"], a: 3, t: "find_wrong", e: "अशुद्ध 'अपराहन' है। शुद्ध रूप 'अपराह्न' होता है, जिसमें ह आधा होता है और न पूरा नीचे लगा होता है। द्वंद्व, सच्चिदानंद और युधिष्ठिर शुद्ध हैं।" },
+        { q: "शुद्ध रूप का चयन कीजिए:", o: ["सौहार्द", "सौहृद", "साहार्द", "सौहार्दा"], a: 0, t: "pure", e: "शुद्ध रूप 'सौहार्द' है। सुहृद शब्द में प्रत्यय लगने से आदि स्वर की वृद्धि होकर सौहार्द बनता है।" },
+        { q: "किस शब्द की वर्तनी शुद्ध है?", o: ["साम्राज्य", "सम्राज्य", "सामराज्य", "साम्राज"], a: 0, t: "pure", e: "शुद्ध रूप 'साम्राज्य' है। सम्राट शब्द का भाववाचक रूप साम्राज्य कहलाता है।" }
+    ];
+
+    // Variables for State
+    let currentIdx = 0;
+    let examDuration = 24 * 60; // 1440 seconds
+    let systemTimer = null;
+    let userAnswers = new Array(20).fill(null); 
+    let questionStatuses = new Array(20).fill('unvisited'); // unvisited, answered, reviewed
+    let questionTimes = new Array(20).fill(0); // Tracking per question seconds
+    let activeQuestionTimer = null;
+
+    function initExam() {
+        showScreen('exam-screen');
+        buildPalette();
+        loadQuestion(0);
+        startExamClock();
+        startPerQuestionTimer();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function buildPalette() {
+        const grid = document.getElementById('palette-grid');
+        grid.innerHTML = '';
+        for(let i=0; i<20; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'p-btn';
+            btn.id = `p-btn-${i}`;
+            btn.innerText = i + 1;
+            btn.onclick = () => jumpToQuestion(i);
+            grid.appendChild(btn);
+        }
+    }
+
+    function loadQuestion(idx) {
+        currentIdx = idx;
+        
+        // Dynamic Palette active styling
+        document.querySelectorAll('.p-btn').forEach(b => b.classList.remove('active-q'));
+        const activeBtn = document.getElementById(`p-btn-${idx}`);
+        if(activeBtn) {
+            activeBtn.classList.add('active-q');
+            if(questionStatuses[idx] === 'unvisited') {
+                questionStatuses[idx] = 'unanswered';
+            }
+        }
+
+        document.getElementById('q-number-title').innerText = `Question ${idx + 1} of 20`;
+        const qData = questions[idx];
+        document.getElementById('q-text-box').innerText = qData.q;
+        document.getElementById('q-type-badge').innerText = qData.t === 'find_wrong' ? "प्रकार: अशुद्ध शब्द खोजें ⚠️" : "प्रकार: शुद्ध वर्तनी खोजें ✓";
+
+        // Option generation
+        const optBox = document.getElementById('options-box');
+        optBox.innerHTML = '';
+        qData.o.forEach((opt, oIdx) => {
+            const label = document.createElement('label');
+            label.className = 'option-card';
+            
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `exam-opt`;
+            radio.value = oIdx;
+            if(userAnswers[idx] !== null && userAnswers[idx] === oIdx) {
+                radio.checked = true;
+            }
+
+            // AUTO-SAVE on selecting right away!
+            radio.onchange = () => {
+                userAnswers[idx] = oIdx;
+                questionStatuses[idx] = 'answered'; // Change status to answered instantly
+                updatePaletteStyle(idx);
+            };
+
+            label.appendChild(radio);
+            const span = document.createElement('span');
+            span.innerText = opt;
+            label.appendChild(span);
+            optBox.appendChild(label);
+        });
+
+        updatePaletteStyle(idx);
+
+        document.getElementById('prev-btn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+        document.getElementById('next-btn').style.visibility = idx === 19 ? 'hidden' : 'visible';
+    }
+
+    function updatePaletteStyle(idx) {
+        const btn = document.getElementById(`p-btn-${idx}`);
+        if(!btn) return;
+        btn.className = 'p-btn'; // reset class
+        if(idx === currentIdx) btn.classList.add('active-q');
+        
+        if(questionStatuses[idx] === 'answered') {
+            btn.classList.add('answered');
+        } else if(questionStatuses[idx] === 'reviewed') {
+            btn.classList.add('reviewed');
+        } else if(questionStatuses[idx] === 'unanswered') {
+            btn.classList.add('unanswered');
+        }
+    }
+
+    // Action Triggers
+    function actionSaveNext() {
+        if(userAnswers[currentIdx] !== null) {
+            questionStatuses[currentIdx] = 'answered';
+        }
+        updatePaletteStyle(currentIdx);
+        navNext();
+    }
+
+    function actionMarkReview() {
+        questionStatuses[currentIdx] = 'reviewed';
+        updatePaletteStyle(currentIdx);
+        navNext();
+    }
+
+    function actionClearResponse() {
+        userAnswers[currentIdx] = null;
+        const checked = document.querySelector('input[name="exam-opt"]:checked');
+        if(checked) checked.checked = false;
+        questionStatuses[currentIdx] = 'unanswered';
+        updatePaletteStyle(currentIdx);
+    }
+
+    function navNext() {
+        if(currentIdx < 19) jumpToQuestion(currentIdx + 1);
+    }
+
+    function navPrevious() {
+        if(currentIdx > 0) jumpToQuestion(currentIdx - 1);
+    }
+
+    function jumpToQuestion(targetIdx) {
+        if(targetIdx >= 0 && targetIdx < 20) {
+            loadQuestion(targetIdx);
+        }
+    }
+
+    // Timer Systems
+    function startExamClock() {
+        const clockDiv = document.getElementById('clock');
+        systemTimer = setInterval(() => {
+            examDuration--;
+            let min = Math.floor(examDuration / 60);
+            let sec = examDuration % 60;
+            clockDiv.innerText = `${min < 10 ? '0'+min : min}:${sec < 10 ? '0'+sec : sec}`;
+
+            if(examDuration <= 0) {
+                clearInterval(systemTimer);
+                clearInterval(activeQuestionTimer);
+                alert("समय सीमा समाप्त! आपका टेस्ट सबमिट हो रहा है।");
+                processFinalResults();
+            }
+        }, 1000);
+    }
+
+    function startPerQuestionTimer() {
+        activeQuestionTimer = setInterval(() => {
+            questionTimes[currentIdx]++;
+        }, 1000);
+    }
+
+    function confirmSubmit() {
+        if(confirm("क्या आप सचमुच परीक्षा समाप्त करके परिणाम देखना चाहते हैं?")) {
+            clearInterval(systemTimer);
+            clearInterval(activeQuestionTimer);
+            processFinalResults();
+        }
+    }
+
+    function processFinalResults() {
+        let finalScore = 0;
+        let totalTimeUsed = questionTimes.reduce((a, b) => a + b, 0);
+
+        const solContainer = document.getElementById('detailed-solutions-box');
+        const numGridSummary = document.getElementById('score-summary-numbers');
+        
+        solContainer.innerHTML = '';
+        numGridSummary.innerHTML = '';
+
+        questions.forEach((qData, idx) => {
+            const uAns = userAnswers[idx];
+            const isCorrect = (uAns !== null && uAns === qData.a);
+            if(isCorrect) finalScore++;
+
+            // Create Color Coded summary numbers for the top grid
+            const numBox = document.createElement('button');
+            numBox.className = `score-btn ${uAns === null ? 'skipped' : (isCorrect ? 'right' : 'wrong')}`;
+            numBox.innerText = idx + 1;
+            numBox.onclick = () => {
+                document.getElementById(`sol-card-${idx}`).scrollIntoView({ behavior: 'smooth' });
+            };
+            numGridSummary.appendChild(numBox);
+
+            // Generate full solutions list below
+            const solCard = document.createElement('div');
+            solCard.className = 'sol-card';
+            solCard.id = `sol-card-${idx}`;
+
+            let optionsHTML = '';
+            qData.o.forEach((opt, oIdx) => {
+                let statusClass = '';
+                if(oIdx === qData.a) {
+                    statusClass = 'correct'; // Sahi option humesha green rahega
+                } else if(uAns === oIdx && uAns !== qData.a) {
+                    statusClass = 'wrong'; // Galat lagaya toh woh option red ho jayega
+                }
+                optionsHTML += `<div class="sol-opt ${statusClass}">${oIdx+1}. ${opt}</div>`;
+            });
+
+            // Dynamic evaluation sticker based on speed benchmarks
+            let timeSpent = questionTimes[idx];
+            let topperTargetSec = qData.t === 'find_wrong' ? 12 : 8;
+            let sticker = "";
+            let badgeStyle = "";
+
+            if(timeSpent <= topperTargetSec) {
+                sticker = "😊🔥 (Shandar speed! Bilkul Topper ki tarah)";
+                badgeStyle = "background: #d4edda; color: #155724;";
+            } else {
+                sticker = "⚠️⏳ (Sikhne aur tez karne ki jarurat hai)";
+                badgeStyle = "background: #f8d7da; color: #721c24;";
+            }
+
+            solCard.innerHTML = `
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 8px;">प्रश्न ${idx+1}: ${qData.q}</div>
+                <div>${optionsHTML}</div>
+                <div class="explanation-box"><strong>सटीक व्याख्या:</strong> ${qData.e}</div>
+                <div class="time-badge" style="${badgeStyle}">
+                    आपका समय: ${timeSpent} सेकंड | ${sticker}
+                </div>
+            `;
+            solContainer.appendChild(solCard);
+        });
+
+        // Set Metric Display
+        document.getElementById('res-score').innerText = `${finalScore}/20`;
+        let totalMin = Math.floor(totalTimeUsed / 60);
+        let totalSec = totalTimeUsed % 60;
+        document.getElementById('res-total-time').innerText = `${totalMin} मिनट ${totalSec} सेकंड`;
+        
+        let accuracyRate = ((finalScore / 20) * 100).toFixed(1);
+        document.getElementById('res-accuracy').innerText = `${accuracyRate}%`;
+
+        showScreen('result-screen');
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+</script>
+
+</body>
+</html>
